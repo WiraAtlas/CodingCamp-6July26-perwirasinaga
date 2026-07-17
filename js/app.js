@@ -397,7 +397,8 @@ function renderMonthlySummary() {
     const [year, mon] = key.split('-');
     const label  = `${MONTH_NAMES[parseInt(mon, 10) - 1]} ${year}`;
     const { inc, exp } = map[key];
-    const isOver = exp > inc;
+    const remaining = inc - exp;
+    const isOver    = exp > inc;
 
     return `
       <div class="month-block">
@@ -410,6 +411,13 @@ function renderMonthlySummary() {
           <tr>
             <td class="summary-type">Expenses</td>
             <td class="summary-amount expense-amount">-${fmt(exp)}</td>
+          </tr>
+          <tr class="summary-divider-row">
+            <td colspan="2"><hr class="summary-divider"/></td>
+          </tr>
+          <tr>
+            <td class="summary-type summary-remaining-label">Remaining</td>
+            <td class="summary-amount ${remaining >= 0 ? 'income-amount' : 'expense-amount'}">${remaining >= 0 ? '+' : '-'}${fmt(Math.abs(remaining))}</td>
           </tr>
         </table>
         ${isOver
