@@ -365,6 +365,60 @@ input::placeholder {
   margin: 0 auto 8px;
 }
 
+/* ── Monthly Summary ──────────────────────────────────────── */
+.monthly-summary-card {
+  margin-top: 0;
+}
+
+.month-block {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.month-block:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.month-block:first-child {
+  padding-top: 0;
+}
+
+.month-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.summary-table td {
+  padding: 5px 0;
+  font-size: 0.9rem;
+}
+
+.summary-type {
+  color: var(--text-muted);
+  font-weight: 600;
+  width: 50%;
+}
+
+.summary-amount {
+  font-weight: 700;
+  text-align: right;
+}
+
+.overbuy-warning {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--red);
+}
+
 /* ── Modal ────────────────────────────────────────────────── */
 .modal-overlay {
   position: fixed;

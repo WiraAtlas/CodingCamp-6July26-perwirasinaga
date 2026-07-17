@@ -190,6 +190,7 @@ function render() {
   renderBalance();
   renderList();
   renderChart();
+  renderMonthlySummary();
 }
 
 // ── Render balance ───────────────────────────────────────────
@@ -366,6 +367,59 @@ limitInput.addEventListener('change', () => {
   renderBalance();
   renderList();
 });
+
+// ── Render monthly summary ────────────────────────────────────
+function renderMonthlySummary() {
+  const body      = document.getElementById('monthly-summary-body');
+  const emptyMsg  = document.getElementById('monthly-empty');
+
+  if (transactions.length === 0) {
+    body.innerHTML = '<p class="empty-msg" id="monthly-empty">No transactions yet.</p>';
+    return;
+  }
+
+  // Group by "YYYY-MM"
+  const map = {};
+  transactions.forEach(t => {
+    const d   = new Date(t.date);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    if (!map[key]) map[key] = { inc: 0, exp: 0 };
+    t.type === 'income' ? (map[key].inc += t.amount) : (map[key].exp += t.amount);
+  });
+
+  // Sort months newest first
+  const months = Object.keys(map).sort((a, b) => b.localeCompare(a));
+
+  const MONTH_NAMES = ['January','February','March','April','May','June',
+                       'July','August','September','October','November','December'];
+
+  const rows = months.map(key => {
+    const [year, mon] = key.split('-');
+    const label  = `${MONTH_NAMES[parseInt(mon, 10) - 1]} ${year}`;
+    const { inc, exp } = map[key];
+    const isOver = exp > inc;
+
+    return `
+      <div class="month-block">
+        <div class="month-label">${label}</div>
+        <table class="summary-table">
+          <tr>
+            <td class="summary-type">Income</td>
+            <td class="summary-amount income-amount">+${fmt(inc)}</td>
+          </tr>
+          <tr>
+            <td class="summary-type">Expenses</td>
+            <td class="summary-amount expense-amount">-${fmt(exp)}</td>
+          </tr>
+        </table>
+        ${isOver
+          ? '<p class="overbuy-warning">⚠️ Stop overbuying!</p>'
+          : ''}
+      </div>`;
+  }).join('');
+
+  body.innerHTML = rows;
+}
 
 // ── Helpers ──────────────────────────────────────────────────
 function fmt(n) {
