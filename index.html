@@ -72,6 +72,11 @@
           </div>
         </div>
 
+        <div class="form-group">
+          <label for="tx-date">Date</label>
+          <input type="date" id="tx-date" />
+        </div>
+
         <button type="submit" class="btn-add">Add Transaction</button>
       </form>
     </div>
@@ -127,6 +132,49 @@
     <div class="modal-actions">
       <button id="modal-cancel" class="btn-secondary">Cancel</button>
       <button id="modal-confirm" class="btn-add">Add</button>
+    </div>
+  </div>
+
+  <!-- Archive Modal -->
+  <div id="archive-modal-overlay" class="modal-overlay hidden"></div>
+  <div id="archive-modal" class="archive-modal hidden" role="dialog" aria-modal="true" aria-labelledby="archive-modal-title">
+    <div class="archive-modal-header">
+      <h2 id="archive-modal-title" class="archive-modal-title"></h2>
+      <button id="archive-modal-close" class="archive-modal-close" aria-label="Close">✕</button>
+    </div>
+    <div class="archive-modal-body">
+      <table class="archive-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Type</th>
+            <th>Amount</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="archive-table-body"></tbody>
+      </table>
+    </div>
+    <div class="archive-modal-footer">
+      <table class="summary-table">
+        <tr>
+          <td class="summary-type">Income</td>
+          <td class="summary-amount income-amount" id="archive-total-income"></td>
+        </tr>
+        <tr>
+          <td class="summary-type">Expenses</td>
+          <td class="summary-amount expense-amount" id="archive-total-expenses"></td>
+        </tr>
+        <tr class="summary-divider-row">
+          <td colspan="2"><hr class="summary-divider"/></td>
+        </tr>
+        <tr>
+          <td class="summary-type summary-remaining-label">Remaining</td>
+          <td id="archive-total-remaining" class="summary-amount"></td>
+        </tr>
+      </table>
+      <p id="archive-overbuy-warning" class="overbuy-warning hidden"></p>
     </div>
   </div>
 

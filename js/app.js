@@ -35,6 +35,7 @@ const catSelect       = document.getElementById('category');
 const customCatGroup  = document.getElementById('custom-cat-group');
 const customCatInput  = document.getElementById('custom-category');
 const limitInput      = document.getElementById('spending-limit');
+const dateInput       = document.getElementById('tx-date');
 const sortSelect      = document.getElementById('sort-select');
 const txList          = document.getElementById('transaction-list');
 const listEmpty       = document.getElementById('list-empty');
@@ -62,6 +63,9 @@ const modalConfirm  = document.getElementById('modal-confirm');
   buildCategoryOptions();
 
   if (spendingLimit > 0) limitInput.value = spendingLimit;
+
+  // Default date picker to today
+  dateInput.value = new Date().toISOString().slice(0, 10);
 
   render();
 })();
@@ -120,15 +124,18 @@ form.addEventListener('submit', e => {
     id:       Date.now(),
     name:     nameInput.value.trim(),
     amount:   parseFloat(parseFloat(amountInput.value).toFixed(2)),
-    type:     typeSelect.value,          // 'expense' | 'income'
+    type:     typeSelect.value,
     category: cat,
-    date:     new Date().toISOString(),
+    date:     dateInput.value
+                ? new Date(dateInput.value + 'T12:00:00').toISOString()
+                : new Date().toISOString(),
   };
 
   transactions.unshift(tx);
   localStorage.setItem(KEY_TX, JSON.stringify(transactions));
   render();
   form.reset();
+  dateInput.value = new Date().toISOString().slice(0, 10);
   buildCategoryOptions();
 });
 
@@ -207,12 +214,19 @@ function renderBalance() {
   }
 }
 
-// ── Render list ──────────────────────────────────────────────
+// ── Render list (current month only) ────────────────────────
 function renderList() {
-  const list = sorted();
+  const now      = new Date();
+  const curYear  = now.getFullYear();
+  const curMonth = now.getMonth();
+  const list     = sorted().filter(t => {
+    const d = new Date(t.date);
+    return d.getFullYear() === curYear && d.getMonth() === curMonth;
+  });
 
   if (list.length === 0) {
     txList.innerHTML = '';
+    listEmpty.textContent = 'No transactions this month.';
     listEmpty.classList.remove('hidden');
     return;
   }
@@ -370,8 +384,7 @@ limitInput.addEventListener('change', () => {
 
 // ── Render monthly summary ────────────────────────────────────
 function renderMonthlySummary() {
-  const body      = document.getElementById('monthly-summary-body');
-  const emptyMsg  = document.getElementById('monthly-empty');
+  const body = document.getElementById('monthly-summary-body');
 
   if (transactions.length === 0) {
     body.innerHTML = '<p class="empty-msg" id="monthly-empty">No transactions yet.</p>';
@@ -393,16 +406,24 @@ function renderMonthlySummary() {
   const MONTH_NAMES = ['January','February','March','April','May','June',
                        'July','August','September','October','November','December'];
 
+  // Current month key
+  const now     = new Date();
+  const curKey  = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
   const rows = months.map(key => {
     const [year, mon] = key.split('-');
-    const label  = `${MONTH_NAMES[parseInt(mon, 10) - 1]} ${year}`;
+    const label       = `${MONTH_NAMES[parseInt(mon, 10) - 1]} ${year}`;
     const { inc, exp } = map[key];
-    const remaining = inc - exp;
-    const isOver    = exp > inc;
+    const remaining   = inc - exp;
+    const isOver      = exp > inc;
+    const isPast      = key !== curKey;
 
     return `
-      <div class="month-block">
-        <div class="month-label">${label}</div>
+      <div class="month-block ${isPast ? 'month-block--archive' : ''}" ${isPast ? `data-month-key="${key}" role="button" tabindex="0" aria-label="Open ${label} archive"` : ''}>
+        <div class="month-label">
+          ${label}
+          ${isPast ? '<span class="archive-hint">View details →</span>' : '<span class="archive-hint current-tag">Current</span>'}
+        </div>
         <table class="summary-table">
           <tr>
             <td class="summary-type">Income</td>
@@ -420,14 +441,87 @@ function renderMonthlySummary() {
             <td class="summary-amount ${remaining >= 0 ? 'income-amount' : 'expense-amount'}">${remaining >= 0 ? '+' : '-'}${fmt(Math.abs(remaining))}</td>
           </tr>
         </table>
-        ${isOver
-          ? '<p class="overbuy-warning">⚠️ Stop overbuying!</p>'
-          : ''}
+        ${isOver ? '<p class="overbuy-warning">⚠️ Stop overbuying!</p>' : ''}
       </div>`;
   }).join('');
 
   body.innerHTML = rows;
+
+  // Attach click + keyboard listeners to past month cards
+  body.querySelectorAll('.month-block--archive').forEach(el => {
+    el.addEventListener('click', () => openArchiveModal(el.dataset.monthKey));
+    el.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') openArchiveModal(el.dataset.monthKey);
+    });
+  });
 }
+
+// ── Archive modal ─────────────────────────────────────────────
+const MONTH_NAMES_FULL = ['January','February','March','April','May','June',
+                          'July','August','September','October','November','December'];
+
+function openArchiveModal(key) {
+  const [year, mon] = key.split('-');
+  const label       = `${MONTH_NAMES_FULL[parseInt(mon, 10) - 1]} ${year}`;
+
+  // Filter transactions for this month
+  const txs = transactions.filter(t => {
+    const d = new Date(t.date);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` === key;
+  }).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  // Totals
+  let inc = 0, exp = 0;
+  txs.forEach(t => t.type === 'income' ? (inc += t.amount) : (exp += t.amount));
+  const remaining = inc - exp;
+
+  // Build table rows
+  const rowsHtml = txs.map(t => {
+    const isIncome = t.type === 'income';
+    const sign     = isIncome ? '+' : '-';
+    const cls      = isIncome ? 'income-amount' : 'expense-amount';
+    const dateStr  = new Date(t.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    return `
+      <tr>
+        <td>${esc(t.name)}</td>
+        <td>${esc(t.category)}</td>
+        <td><span class="archive-type-badge archive-type-badge--${t.type}">${t.type}</span></td>
+        <td class="${cls}">${sign}${fmt(t.amount)}</td>
+        <td>${dateStr}</td>
+      </tr>`;
+  }).join('');
+
+  document.getElementById('archive-modal-title').textContent = `${label} — Transactions`;
+  document.getElementById('archive-table-body').innerHTML    = rowsHtml;
+  document.getElementById('archive-total-income').textContent    = `+${fmt(inc)}`;
+  document.getElementById('archive-total-expenses').textContent  = `-${fmt(exp)}`;
+  document.getElementById('archive-total-remaining').textContent =
+    `${remaining >= 0 ? '+' : '-'}${fmt(Math.abs(remaining))}`;
+  document.getElementById('archive-total-remaining').className =
+    `summary-amount ${remaining >= 0 ? 'income-amount' : 'expense-amount'}`;
+
+  const warning = document.getElementById('archive-overbuy-warning');
+  exp > inc
+    ? (warning.textContent = '⚠️ Stop overbuying!', warning.classList.remove('hidden'))
+    : warning.classList.add('hidden');
+
+  document.getElementById('archive-modal-overlay').classList.remove('hidden');
+  document.getElementById('archive-modal').classList.remove('hidden');
+  document.getElementById('archive-modal-close').focus();
+}
+
+function closeArchiveModal() {
+  document.getElementById('archive-modal-overlay').classList.add('hidden');
+  document.getElementById('archive-modal').classList.add('hidden');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('archive-modal-close').addEventListener('click', closeArchiveModal);
+  document.getElementById('archive-modal-overlay').addEventListener('click', closeArchiveModal);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeArchiveModal();
+  });
+});
 
 // ── Helpers ──────────────────────────────────────────────────
 function fmt(n) {
