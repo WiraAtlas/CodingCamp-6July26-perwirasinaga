@@ -134,8 +134,10 @@ form.addEventListener('submit', e => {
   transactions.unshift(tx);
   localStorage.setItem(KEY_TX, JSON.stringify(transactions));
   render();
+  // preserve the selected date so back-dating multiple entries is easy
+  const savedDate = dateInput.value;
   form.reset();
-  dateInput.value = new Date().toISOString().slice(0, 10);
+  dateInput.value = savedDate;
   buildCategoryOptions();
 });
 
