@@ -10,7 +10,7 @@ const KEY_LIMIT = 'evb_limit';
 const KEY_THEME = 'evb_theme';
 const KEY_CATS  = 'evb_custom_cats';
 
-// ── Chart colours ────────────────────────────────────────────
+// ── Chart colours (one per category slot) ───────────────────
 const CAT_COLORS = ['#4caf50','#2196f3','#ff9800','#f44336','#9c27b0','#00bcd4','#ff5722','#8bc34a'];
 
 // ── Category icons ───────────────────────────────────────────
@@ -21,38 +21,38 @@ function iconFor(cat) { return CAT_ICON[cat] || '📦'; }
 const BASE_CATS = ['Food', 'Transport', 'Fun'];
 
 // ── State ────────────────────────────────────────────────────
-let transactions  = [];
-let customCats    = [];
-let spendingLimit = 0;
-let expenseChart  = null;
+let transactions    = [];
+let customCats      = [];
+let spendingLimit   = 0;
+let expenseChart    = null;
 
 // ── DOM ──────────────────────────────────────────────────────
-const form           = document.getElementById('transaction-form');
-const nameInput      = document.getElementById('item-name');
-const amountInput    = document.getElementById('amount');
-const typeSelect     = document.getElementById('type');
-const catSelect      = document.getElementById('category');
-const customCatGroup = document.getElementById('custom-cat-group');
-const customCatInput = document.getElementById('custom-category');
-const limitInput     = document.getElementById('spending-limit');
-const sortSelect     = document.getElementById('sort-select');
-const txList         = document.getElementById('transaction-list');
-const listEmpty      = document.getElementById('list-empty');
-const chartEmpty     = document.getElementById('chart-empty');
-const balanceEl      = document.getElementById('total-balance');
-const limitWarning   = document.getElementById('limit-warning');
-const themeBtn       = document.getElementById('theme-toggle');
-const nameError      = document.getElementById('name-error');
-const amountError    = document.getElementById('amount-error');
+const form            = document.getElementById('transaction-form');
+const nameInput       = document.getElementById('item-name');
+const amountInput     = document.getElementById('amount');
+const typeSelect      = document.getElementById('type');
+const catSelect       = document.getElementById('category');
+const customCatGroup  = document.getElementById('custom-cat-group');
+const customCatInput  = document.getElementById('custom-category');
+const limitInput      = document.getElementById('spending-limit');
+const sortSelect      = document.getElementById('sort-select');
+const txList          = document.getElementById('transaction-list');
+const listEmpty       = document.getElementById('list-empty');
+const chartEmpty      = document.getElementById('chart-empty');
+const balanceEl       = document.getElementById('total-balance');
+const limitWarning    = document.getElementById('limit-warning');
+const themeBtn        = document.getElementById('theme-toggle');
+const nameError       = document.getElementById('name-error');
+const amountError     = document.getElementById('amount-error');
 
-// modals
-const modalOverlay = document.getElementById('modal-overlay');
-const modal        = document.getElementById('add-cat-modal');
-const modalInput   = document.getElementById('modal-cat-input');
-const modalCancel  = document.getElementById('modal-cancel');
-const modalConfirm = document.getElementById('modal-confirm');
+// modal
+const modalOverlay  = document.getElementById('modal-overlay');
+const modal         = document.getElementById('add-cat-modal');
+const modalInput    = document.getElementById('modal-cat-input');
+const modalCancel   = document.getElementById('modal-cancel');
+const modalConfirm  = document.getElementById('modal-confirm');
 
-// ── Custom Date Picker DOM ───────────────────────────────────
+// ── Custom Date Picker DOM (must be before init()) ───────────
 const dpBtn      = document.getElementById('datepicker-btn');
 const dpPopup    = document.getElementById('datepicker-popup');
 const dpLabel    = document.getElementById('datepicker-label');
@@ -168,9 +168,9 @@ document.addEventListener('click', e => {
 
 // ── Boot ─────────────────────────────────────────────────────
 (function init() {
-  transactions  = JSON.parse(localStorage.getItem(KEY_TX)   || '[]');
-  customCats    = JSON.parse(localStorage.getItem(KEY_CATS)  || '[]');
-  spendingLimit = parseFloat(localStorage.getItem(KEY_LIMIT) || '0');
+  transactions  = JSON.parse(localStorage.getItem(KEY_TX)    || '[]');
+  customCats    = JSON.parse(localStorage.getItem(KEY_CATS)   || '[]');
+  spendingLimit = parseFloat(localStorage.getItem(KEY_LIMIT)  || '0');
 
   applyTheme(localStorage.getItem(KEY_THEME) || 'light');
   buildCategoryOptions();
@@ -235,7 +235,6 @@ form.addEventListener('submit', e => {
   transactions.unshift(tx);
   localStorage.setItem(KEY_TX, JSON.stringify(transactions));
   render();
-  // Preserve selected date after reset
   const savedLabel = dpLabel.textContent;
   form.reset();
   dpLabel.textContent = savedLabel;
@@ -276,12 +275,12 @@ sortSelect.addEventListener('change', renderList);
 function sorted() {
   const arr = [...transactions];
   switch (sortSelect.value) {
-    case 'date-asc':    return arr.sort((a,b) => new Date(a.date) - new Date(b.date));
-    case 'date-desc':   return arr.sort((a,b) => new Date(b.date) - new Date(a.date));
-    case 'amount-desc': return arr.sort((a,b) => b.amount - a.amount);
-    case 'amount-asc':  return arr.sort((a,b) => a.amount - b.amount);
-    case 'category':    return arr.sort((a,b) => a.category.localeCompare(b.category));
-    default:            return arr;
+    case 'date-asc':     return arr.sort((a,b) => new Date(a.date) - new Date(b.date));
+    case 'date-desc':    return arr.sort((a,b) => new Date(b.date) - new Date(a.date));
+    case 'amount-desc':  return arr.sort((a,b) => b.amount - a.amount);
+    case 'amount-asc':   return arr.sort((a,b) => a.amount - b.amount);
+    case 'category':     return arr.sort((a,b) => a.category.localeCompare(b.category));
+    default:             return arr;
   }
 }
 
@@ -407,8 +406,11 @@ function renderChart() {
         legend: {
           position: 'bottom',
           labels: {
-            color: txtColor, font: { size: 12 },
-            padding: 14, usePointStyle: true, pointStyle: 'circle',
+            color:         txtColor,
+            font:          { size: 12 },
+            padding:       14,
+            usePointStyle: true,
+            pointStyle:    'circle',
           },
         },
         tooltip: {
@@ -433,7 +435,7 @@ function refreshChartColors() {
   expenseChart.update();
 }
 
-// ── Category modal ───────────────────────────────────────────
+// ── Modal ────────────────────────────────────────────────────
 function openModal() {
   modalInput.value = '';
   modal.classList.remove('hidden');
@@ -481,7 +483,7 @@ function renderMonthlySummary() {
   const body = document.getElementById('monthly-summary-body');
 
   if (transactions.length === 0) {
-    body.innerHTML = '<p class="empty-msg">No transactions yet.</p>';
+    body.innerHTML = '<p class="empty-msg" id="monthly-empty">No transactions yet.</p>';
     return;
   }
 
@@ -493,7 +495,7 @@ function renderMonthlySummary() {
     t.type === 'income' ? (map[key].inc += t.amount) : (map[key].exp += t.amount);
   });
 
-  const months     = Object.keys(map).sort((a, b) => b.localeCompare(a));
+  const months = Object.keys(map).sort((a, b) => b.localeCompare(a));
   const MONTH_NAMES = ['January','February','March','April','May','June',
                        'July','August','September','October','November','December'];
   const now    = new Date();
@@ -511,9 +513,7 @@ function renderMonthlySummary() {
       <div class="month-block ${isPast ? 'month-block--archive' : ''}" ${isPast ? `data-month-key="${key}" role="button" tabindex="0" aria-label="Open ${label} archive"` : ''}>
         <div class="month-label">
           ${label}
-          ${isPast
-            ? '<span class="archive-hint">View details →</span>'
-            : '<span class="archive-hint current-tag">Current</span>'}
+          ${isPast ? '<span class="archive-hint">View details →</span>' : '<span class="archive-hint current-tag">Current</span>'}
         </div>
         <table class="summary-table">
           <tr>
@@ -602,6 +602,7 @@ function closeArchiveModal() {
   document.getElementById('archive-modal').classList.add('hidden');
 }
 
+// Archive modal listeners — wired directly (no DOMContentLoaded needed)
 document.getElementById('archive-modal-close').addEventListener('click', closeArchiveModal);
 document.getElementById('archive-modal-overlay').addEventListener('click', closeArchiveModal);
 
@@ -611,10 +612,9 @@ document.addEventListener('keydown', e => {
 
 // ── Helpers ──────────────────────────────────────────────────
 function fmt(n) {
-  return 'Rp\u202f' + Math.abs(n).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  return '$' + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function esc(s) {
-  return String(s).replace(/[&<>"']/g, c =>
-    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
