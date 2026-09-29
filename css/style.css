@@ -434,6 +434,199 @@ input::placeholder {
   font-weight: 700;
 }
 
+/* ── Custom Date Picker ───────────────────────────────────── */
+.datepicker-wrap {
+  position: relative;
+}
+
+.datepicker-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.datepicker-btn:hover,
+.datepicker-btn[aria-expanded="true"] {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(33,150,243,0.15);
+}
+
+.datepicker-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.datepicker-btn #datepicker-label {
+  flex: 1;
+}
+
+.datepicker-chevron {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  transition: transform 0.15s;
+}
+
+.datepicker-btn[aria-expanded="true"] .datepicker-chevron {
+  transform: rotate(180deg);
+}
+
+/* ── Popup ────────────────────────────────────────────────── */
+.datepicker-popup {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 400;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.18);
+  width: 300px;
+  padding: 16px;
+  animation: dpFadeIn 0.15s ease;
+}
+
+@keyframes dpFadeIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Header: prev / month+year / next ─────────────────────── */
+.dp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.dp-month-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.dp-nav-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  line-height: 1;
+}
+
+.dp-nav-btn:hover {
+  background: var(--blue);
+  color: #fff;
+  border-color: var(--blue);
+}
+
+/* ── Weekday row ──────────────────────────────────────────── */
+.dp-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 6px;
+}
+
+.dp-weekdays span {
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 4px 0;
+}
+
+/* ── Day grid ─────────────────────────────────────────────── */
+.dp-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.dp-day {
+  background: none;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text);
+  padding: 7px 0;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  line-height: 1;
+}
+
+.dp-day:hover:not(:disabled) {
+  background: rgba(33,150,243,0.12);
+  color: var(--blue);
+}
+
+.dp-day--today {
+  font-weight: 800;
+  color: var(--blue);
+  border: 1.5px solid var(--blue);
+}
+
+.dp-day--selected {
+  background: var(--blue) !important;
+  color: #fff !important;
+  font-weight: 700;
+}
+
+.dp-day--future {
+  opacity: 0.28;
+  cursor: not-allowed;
+}
+
+.dp-day--empty {
+  pointer-events: none;
+}
+
+/* ── Footer: Today button ─────────────────────────────────── */
+.dp-footer {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: center;
+}
+
+.dp-today-btn {
+  background: none;
+  border: 1px solid var(--blue);
+  border-radius: var(--radius);
+  color: var(--blue);
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 6px 18px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.dp-today-btn:hover {
+  background: var(--blue);
+  color: #fff;
+}
+
 /* ── Archive — clickable past month cards ─────────────────── */
 .month-block--archive {
   cursor: pointer;

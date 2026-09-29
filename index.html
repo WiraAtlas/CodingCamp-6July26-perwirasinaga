@@ -73,8 +73,29 @@
         </div>
 
         <div class="form-group">
-          <label for="tx-date">Date</label>
-          <input type="date" id="tx-date" />
+          <label>Date</label>
+          <div class="datepicker-wrap">
+            <button type="button" id="datepicker-btn" class="datepicker-btn" aria-haspopup="true" aria-expanded="false">
+              <span class="datepicker-icon">📅</span>
+              <span id="datepicker-label">Today</span>
+              <span class="datepicker-chevron">▾</span>
+            </button>
+            <div id="datepicker-popup" class="datepicker-popup hidden" role="dialog" aria-label="Choose date">
+              <div class="dp-header">
+                <button type="button" class="dp-nav-btn" id="dp-prev" aria-label="Previous month">‹</button>
+                <span id="dp-month-label" class="dp-month-label"></span>
+                <button type="button" class="dp-nav-btn" id="dp-next" aria-label="Next month">›</button>
+              </div>
+              <div class="dp-weekdays">
+                <span>Su</span><span>Mo</span><span>Tu</span><span>We</span>
+                <span>Th</span><span>Fr</span><span>Sa</span>
+              </div>
+              <div id="dp-grid" class="dp-grid"></div>
+              <div class="dp-footer">
+                <button type="button" id="dp-today-btn" class="dp-today-btn">Today</button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <button type="submit" class="btn-add">Add Transaction</button>

@@ -35,7 +35,6 @@ const catSelect       = document.getElementById('category');
 const customCatGroup  = document.getElementById('custom-cat-group');
 const customCatInput  = document.getElementById('custom-category');
 const limitInput      = document.getElementById('spending-limit');
-const dateInput       = document.getElementById('tx-date');
 const sortSelect      = document.getElementById('sort-select');
 const txList          = document.getElementById('transaction-list');
 const listEmpty       = document.getElementById('list-empty');
@@ -65,7 +64,7 @@ const modalConfirm  = document.getElementById('modal-confirm');
   if (spendingLimit > 0) limitInput.value = spendingLimit;
 
   // Default date picker to today
-  dateInput.value = new Date().toISOString().slice(0, 10);
+  dpLabel.textContent = dpFormatLabel(dpSelected);
 
   render();
 })();
@@ -126,18 +125,16 @@ form.addEventListener('submit', e => {
     amount:   parseFloat(parseFloat(amountInput.value).toFixed(2)),
     type:     typeSelect.value,
     category: cat,
-    date:     dateInput.value
-                ? new Date(dateInput.value + 'T12:00:00').toISOString()
-                : new Date().toISOString(),
+    date:     new Date(dpGetISODate() + 'T12:00:00').toISOString(),
   };
 
   transactions.unshift(tx);
   localStorage.setItem(KEY_TX, JSON.stringify(transactions));
   render();
-  // preserve the selected date so back-dating multiple entries is easy
-  const savedDate = dateInput.value;
+  // preserve selected date after reset — label stays, dpSelected unchanged
+  const savedLabel = dpLabel.textContent;
   form.reset();
-  dateInput.value = savedDate;
+  dpLabel.textContent = savedLabel;
   buildCategoryOptions();
 });
 
@@ -384,7 +381,148 @@ limitInput.addEventListener('change', () => {
   renderList();
 });
 
-// ── Render monthly summary ────────────────────────────────────
+// ── Custom Date Picker ───────────────────────────────────────
+const dpBtn       = document.getElementById('datepicker-btn');
+const dpPopup     = document.getElementById('datepicker-popup');
+const dpLabel     = document.getElementById('datepicker-label');
+const dpMonthLbl  = document.getElementById('dp-month-label');
+const dpGrid      = document.getElementById('dp-grid');
+const dpPrev      = document.getElementById('dp-prev');
+const dpNext      = document.getElementById('dp-next');
+const dpTodayBtn  = document.getElementById('dp-today-btn');
+
+const MONTH_NAMES_DP = ['January','February','March','April','May','June',
+                        'July','August','September','October','November','December'];
+const SHORT_DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+// Picker state — selectedDate is the chosen Date object, viewYear/viewMonth drive the grid
+let dpSelected  = new Date();          // defaults to today
+let dpViewYear  = dpSelected.getFullYear();
+let dpViewMonth = dpSelected.getMonth();
+
+// Expose a getter so the rest of app.js can read the picked date
+function dpGetISODate() {
+  const y = dpSelected.getFullYear();
+  const m = String(dpSelected.getMonth() + 1).padStart(2, '0');
+  const d = String(dpSelected.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function dpFormatLabel(date) {
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+
+  const sameDay = (a, b) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth()    === b.getMonth()    &&
+    a.getDate()     === b.getDate();
+
+  if (sameDay(date, today))     return 'Today';
+  if (sameDay(date, yesterday)) return 'Yesterday';
+  return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function dpRenderGrid() {
+  dpMonthLbl.textContent = `${MONTH_NAMES_DP[dpViewMonth]} ${dpViewYear}`;
+
+  const firstDay  = new Date(dpViewYear, dpViewMonth, 1).getDay();  // 0=Sun
+  const daysInMon = new Date(dpViewYear, dpViewMonth + 1, 0).getDate();
+  const today     = new Date();
+
+  let html = '';
+
+  // Leading empty cells
+  for (let i = 0; i < firstDay; i++) {
+    html += '<span class="dp-day dp-day--empty"></span>';
+  }
+
+  for (let d = 1; d <= daysInMon; d++) {
+    const thisDate  = new Date(dpViewYear, dpViewMonth, d);
+    const isSel     = dpSelected.getFullYear() === dpViewYear &&
+                      dpSelected.getMonth()    === dpViewMonth &&
+                      dpSelected.getDate()     === d;
+    const isToday   = today.getFullYear() === dpViewYear &&
+                      today.getMonth()    === dpViewMonth &&
+                      today.getDate()     === d;
+    const isFuture  = thisDate > today;
+
+    let cls = 'dp-day';
+    if (isSel)    cls += ' dp-day--selected';
+    if (isToday && !isSel) cls += ' dp-day--today';
+    if (isFuture) cls += ' dp-day--future';
+
+    html += `<button type="button" class="${cls}" data-day="${d}" ${isFuture ? 'disabled' : ''}>${d}</button>`;
+  }
+
+  dpGrid.innerHTML = html;
+}
+
+function dpOpen() {
+  // Sync view to currently selected month
+  dpViewYear  = dpSelected.getFullYear();
+  dpViewMonth = dpSelected.getMonth();
+  dpRenderGrid();
+  dpPopup.classList.remove('hidden');
+  dpBtn.setAttribute('aria-expanded', 'true');
+}
+
+function dpClose() {
+  dpPopup.classList.add('hidden');
+  dpBtn.setAttribute('aria-expanded', 'false');
+}
+
+function dpSelectDay(day) {
+  dpSelected = new Date(dpViewYear, dpViewMonth, day);
+  dpLabel.textContent = dpFormatLabel(dpSelected);
+  dpRenderGrid();   // re-render to highlight new selection
+  dpClose();
+}
+
+// Toggle open/close
+dpBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  dpPopup.classList.contains('hidden') ? dpOpen() : dpClose();
+});
+
+// Prev / next month
+dpPrev.addEventListener('click', () => {
+  dpViewMonth--;
+  if (dpViewMonth < 0) { dpViewMonth = 11; dpViewYear--; }
+  dpRenderGrid();
+});
+dpNext.addEventListener('click', () => {
+  dpViewMonth++;
+  if (dpViewMonth > 11) { dpViewMonth = 0; dpViewYear++; }
+  dpRenderGrid();
+});
+
+// Day click (event delegation on the grid)
+dpGrid.addEventListener('click', e => {
+  const btn = e.target.closest('.dp-day');
+  if (!btn || btn.disabled) return;
+  dpSelectDay(parseInt(btn.dataset.day, 10));
+});
+
+// Today shortcut
+dpTodayBtn.addEventListener('click', () => {
+  dpSelected  = new Date();
+  dpViewYear  = dpSelected.getFullYear();
+  dpViewMonth = dpSelected.getMonth();
+  dpLabel.textContent = 'Today';
+  dpRenderGrid();
+  dpClose();
+});
+
+// Close when clicking outside
+document.addEventListener('click', e => {
+  if (!dpPopup.contains(e.target) && e.target !== dpBtn) dpClose();
+});
+
+// Keyboard: Escape closes
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') dpClose();
+});
 function renderMonthlySummary() {
   const body = document.getElementById('monthly-summary-body');
 
